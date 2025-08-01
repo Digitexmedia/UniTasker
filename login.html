@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniTasker - Login</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #0072ff, #00c6ff);
+        color: white;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        text-align: center;
+    }
+    .login-container {
+        background: rgba(255,255,255,0.1);
+        padding: 30px;
+        border-radius: 12px;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        width: 300px;
+    }
+    .login-container img {
+        max-width: 120px;
+        margin-bottom: 10px;
+    }
+    h2 {
+        margin: 5px 0 20px 0;
+        font-weight: normal;
+        font-size: 16px;
+        opacity: 0.9;
+    }
+    input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: none;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        font-size: 14px;
+    }
+    input::placeholder {
+        color: rgba(255,255,255,0.7);
+    }
+    button {
+        width: 100%;
+        padding: 10px;
+        background: #0072ff;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #005fcc;
+    }
+</style>
+</head>
+<body>
+
+<div class="login-container">
+    <img src="https://files.catbox.moe/a2paf3.jpg" alt="UniTasker Logo">
+    <h2>Your Assignment Copilot</h2>
+    <input type="text" id="firstName" placeholder="Enter First Name">
+    <input type="text" id="whatsappNumber" placeholder="Enter WhatsApp Number">
+    <button onclick="login()">Continue</button>
+</div>
+
+<script>
+// If already logged in, skip login
+if (sessionStorage.getItem("whatsappNumber") && sessionStorage.getItem("firstName")) {
+    window.location.href = "index.html";
+}
+
+function login() {
+    const firstName = document.getElementById("firstName").value.trim();
+    const number = document.getElementById("whatsappNumber").value.trim();
+
+    if (!firstName || !number) {
+        alert("Please fill in all fields");
+        return;
+    }
+
+    sessionStorage.setItem("firstName", firstName);
+    sessionStorage.setItem("whatsappNumber", number);
+    window.location.href = "index.html";
+}
+</script>
+
+</body>
+</html>
