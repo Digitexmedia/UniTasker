@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniTasker - Student Dashboard</title>
+<style>
+    body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #0072ff, #00c6ff); color: white; margin: 0; min-height: 100vh; }
+    header { padding: 20px; text-align: center; }
+    header img { max-height: 70px; }
+    .tabBtn { padding: 8px 15px; border: none; background: rgba(255,255,255,0.2); color: white; border-radius: 5px; cursor: pointer; margin-right: 5px; }
+    .tabBtn.active { background: #005fcc; }
+    .form-section, .assignments-section { max-width: 800px; margin: auto; display: none; }
+    .form-section.active, .assignments-section.active { display: block; }
+    input, select, textarea { width: 100%; padding: 8px; margin: 6px 0; border-radius: 6px; border: none; font-size: 14px; color: black; }
+    label { font-weight: bold; display: block; margin-top: 10px; color: yellow; }
+    .hidden { display: none; }
+    .add-member-btn { background: green; padding: 6px 10px; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; }
+    .card { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+    .status-pending { color: yellow; font-weight: bold; }
+    .status-completed { color: lightgreen; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<header>
+    <img src="https://files.catbox.moe/a2paf3.jpg" alt="UniTasker Logo">
+    <h2 id="welcomeText">Welcome</h2>
+</header>
+
+<div style="text-align:center; margin-bottom:20px;">
+    <button id="tabSubmit" class="tabBtn active">✏️ Submit Assignment</button>
+    <button id="tabMyAssignments" class="tabBtn">📂 My Assignments</button>
+    <button id="logoutBtn" style="background:red; padding:8px 15px; border:none; border-radius:5px; color:white; cursor:pointer;">Logout</button>
+</div>
+
+<!-- Submit Assignment -->
+<div class="form-section active" id="submitSection">
+    <form id="assignmentForm">
+        <label>Need Cover Page?</label>
+        <select id="coverPage" required>
+            <option value="">--Select--</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+        </select>
+
+        <div id="typeSection" class="hidden">
+            <label>Assignment Type</label>
+            <select id="assignmentType">
+                <option value="">--Select--</option>
+                <option value="Individual">Individual</option>
+                <option value="Group">Group</option>
+            </select>
+        </div>
+
+        <div id="individualFields" class="hidden">
+            <label>Institution</label><input type="text" id="institutionInd">
+            <label>School Name</label><input type="text" id="schoolNameInd">
+            <label>Course Title</label><input type="text" id="courseTitleInd">
+            <label>Course Code</label><input type="text" id="courseCodeInd">
+            <label>Lecturer Name</label><input type="text" id="lecturerInd">
+            <label>Department</label><input type="text" id="departmentInd">
+            <label>Registration Number</label><input type="text" id="regNoInd">
+            <label>Phone Number</label><input type="text" id="phoneInd">
+        </div>
+
+        <div id="groupFields" class="hidden">
+            <label>Institution</label><input type="text" id="institutionGrp">
+            <label>School Name</label><input type="text" id="schoolNameGrp">
+            <label>Course Title</label><input type="text" id="courseTitleGrp">
+            <label>Course Code</label><input type="text" id="courseCodeGrp">
+            <label>Department</label><input type="text" id="departmentGrp">
+            <h4>Group Members</h4>
+            <div id="groupMembers"></div>
+            <button type="button" class="add-member-btn" id="addMemberBtn">+ Add Member</button>
+        </div>
+
+        <label>Number of Pages</label><input type="number" id="pages" required>
+        <label>Assignment Question</label><textarea id="question"></textarea>
+        <label>Deadline</label><input type="date" id="deadline" required>
+        <button type="submit" style="background:#005fcc; color:white; padding:8px 15px; border:none; border-radius:5px; cursor:pointer;">Submit</button>
+    </form>
+</div>
+
+<!-- My Assignments -->
+<div class="assignments-section" id="assignmentsSection">
+    <div style="text-align:center; margin-bottom:20px;">
+        <button id="tabPending" class="tabBtn active">⏳ Pending (<span id="countPending">0</span>)</button>
+        <button id="tabCompleted" class="tabBtn">✅ Completed (<span id="countCompleted">0</span>)</button>
+    </div>
+    <div id="assignmentList"></div>
+</div>
+
+<script>
+let currentTab = "Pending";
+const firstName = sessionStorage.getItem("firstName");
+const number = sessionStorage.getItem("whatsappNumber");
+
+if (!firstName || !number) window.location.href = "login.html";
+document.getElementById("welcomeText").innerText = `Welcome, ${firstName} (${number})`;
+
+// Tab switching
+document.getElementById("tabSubmit").onclick = () => switchTab("submit");
+document.getElementById("tabMyAssignments").onclick = () => { switchTab("assignments"); loadAssignments(); };
+function switchTab(tab) {
+    document.getElementById("submitSection").classList.toggle("active", tab === "submit");
+    document.getElementById("assignmentsSection").classList.toggle("active", tab === "assignments");
+    document.getElementById("tabSubmit").classList.toggle("active", tab === "submit");
+    document.getElementById("tabMyAssignments").classList.toggle("active", tab === "assignments");
+}
+
+// Cover page logic
+document.getElementById("coverPage").onchange = e => document.getElementById("typeSection").classList.toggle("hidden", e.target.value !== "yes");
+// Assignment type logic
+document.getElementById("assignmentType").onchange = e => {
+    document.getElementById("individualFields").classList.toggle("hidden", e.target.value !== "Individual");
+    document.getElementById("groupFields").classList.toggle("hidden", e.target.value !== "Group");
+};
+// Add group member
+document.getElementById("addMemberBtn").onclick = () => {
+    const div = document.createElement("div");
+    div.innerHTML = `<input type="text" placeholder="Name"><input type="text" placeholder="Reg No"><input type="text" placeholder="Phone">`;
+    document.getElementById("groupMembers").appendChild(div);
+};
+
+// Submit assignment
+document.getElementById("assignmentForm").onsubmit = e => {
+    e.preventDefault();
+    let submissions = JSON.parse(localStorage.getItem("submissions") || "[]");
+    const formData = {
+        id: Date.now(), firstName, whatsapp: number,
+        coverPage: document.getElementById("coverPage").value,
+        type: document.getElementById("assignmentType").value,
+        pages: document.getElementById("pages").value,
+        question: document.getElementById("question").value,
+        deadline: document.getElementById("deadline").value,
+        status: "Pending",
+        paid: false // default unpaid
+    };
+    if (formData.type === "Individual") {
+        formData.institution = document.getElementById("institutionInd").value;
+        formData.schoolName = document.getElementById("schoolNameInd").value;
+        formData.courseTitle = document.getElementById("courseTitleInd").value;
+        formData.courseCode = document.getElementById("courseCodeInd").value;
+        formData.lecturer = document.getElementById("lecturerInd").value;
+        formData.department = document.getElementById("departmentInd").value;
+        formData.regNo = document.getElementById("regNoInd").value;
+        formData.phone = document.getElementById("phoneInd").value;
+    }
+    if (formData.type === "Group") {
+        formData.institution = document.getElementById("institutionGrp").value;
+        formData.schoolName = document.getElementById("schoolNameGrp").value;
+        formData.courseTitle = document.getElementById("courseTitleGrp").value;
+        formData.courseCode = document.getElementById("courseCodeGrp").value;
+        formData.department = document.getElementById("departmentGrp").value;
+        formData.members = [];
+        document.querySelectorAll("#groupMembers div").forEach(m => {
+            const inputs = m.querySelectorAll("input");
+            formData.members.push({ name: inputs[0].value, regNo: inputs[1].value, phone: inputs[2].value });
+        });
+    }
+    submissions.push(formData);
+    localStorage.setItem("submissions", JSON.stringify(submissions));
+
+    // Save pending payment ID
+    localStorage.setItem("pendingPaymentId", formData.id);
+
+    alert("Assignment submitted! Proceed to payment.");
+    window.location.href = "payment.html";
+};
+
+// Load assignments
+function loadAssignments() {
+    let submissions = JSON.parse(localStorage.getItem("submissions") || "[]").filter(a => a.whatsapp === number);
+    document.getElementById("countPending").innerText = submissions.filter(a => a.status === "Pending").length;
+    document.getElementById("countCompleted").innerText = submissions.filter(a => a.status === "Completed").length;
+    document.getElementById("assignmentList").innerHTML = submissions.filter(a => a.status === currentTab).map(renderCard).join("");
+}
+
+// Render card
+function renderCard(a) {
+    let html = `<div class="card">
+        <p><strong>Cover Page:</strong> ${a.coverPage === "yes" ? "Yes" : "No"}</p>
+        <p><strong>Assignment Type:</strong> ${a.type || "No Cover Page"}</p>
+        <p><strong>Pages:</strong> ${a.pages}</p>
+        <p><strong>Payment Status:</strong> ${a.paid ? "✅ Paid" : "❌ Not Paid"}</p>`;
+    if (a.question) html += `<p><strong>Question:</strong> ${a.question}</p>`;
+    if (a.courseTitle || a.courseCode) html += `<p><strong>Course:</strong> ${a.courseTitle || ""} (${a.courseCode || ""})</p>`;
+    if (a.institution) html += `<p><strong>Institution:</strong> ${a.institution}</p>`;
+    if (a.schoolName) html += `<p><strong>School:</strong> ${a.schoolName}</p>`;
+    if (a.department) html += `<p><strong>Department:</strong> ${a.department}</p>`;
+    if (a.lecturer) html += `<p><strong>Lecturer:</strong> ${a.lecturer}</p>`;
+    if (a.type === "Individual") {
+        if (a.regNo) html += `<p><strong>Reg No:</strong> ${a.regNo}</p>`;
+        if (a.phone) html += `<p><strong>Phone:</strong> ${a.phone}</p>`;
+    }
+    if (a.type === "Group" && a.members?.length) {
+        html += `<p><strong>Group Members:</strong></p><ul>`;
+        a.members.forEach(m => html += `<li>${m.name} - ${m.regNo} - ${m.phone}</li>`);
+        html += `</ul>`;
+    }
+    html += `<p><strong>Deadline:</strong> ${a.deadline}</p>
+             <p>Status: <span class="${a.status === 'Pending' ? 'status-pending' : 'status-completed'}">${a.status}</span></p>`;
+    if (a.status === "Completed" && a.completedURL) {
+        html += `<p>✅ <a href="${a.completedURL}" target="_blank" style="color:lightgreen;">Download/View Completed File</a></p>`;
+        if (a.feedback) html += `<p><strong>Feedback:</strong> ${a.feedback}</p>`;
+    }
+    html += `</div>`;
+    return html;
+}
+
+// Tab switching inside My Assignments
+document.getElementById("tabPending").onclick = () => { currentTab = "Pending"; document.getElementById("tabPending").classList.add("active"); document.getElementById("tabCompleted").classList.remove("active"); loadAssignments(); };
+document.getElementById("tabCompleted").onclick = () => { currentTab = "Completed"; document.getElementById("tabCompleted").classList.add("active"); document.getElementById("tabPending").classList.remove("active"); loadAssignments(); };
+
+// Logout
+document.getElementById("logoutBtn").onclick = () => { sessionStorage.clear(); window.location.href = "login.html"; };
+</script>
+</body>
+</html>
