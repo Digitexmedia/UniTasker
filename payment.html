@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniTasker - Payment</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #0072ff, #00c6ff);
+        margin: 0;
+        color: white;
+        padding: 20px;
+    }
+    .container {
+        max-width: 500px;
+        background: rgba(255,255,255,0.1);
+        padding: 20px;
+        border-radius: 12px;
+        margin: auto;
+        text-align: center;
+    }
+    input, textarea {
+        width: 100%;
+        padding: 8px;
+        margin: 6px 0;
+        border-radius: 6px;
+        border: none;
+        font-size: 14px;
+        color: black;
+    }
+    button {
+        background: #005fcc;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #003f8a;
+    }
+    iframe {
+        margin-top: 10px;
+        border-radius: 6px;
+        border: none;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>💳 Assignment Payment</h2>
+    <p>Each page costs <strong>KES 15</strong>. Please review and proceed to payment.</p>
+
+    <p><strong>Number of Pages:</strong> <span id="pagesCount">0</span></p>
+    <p><strong>Total Amount:</strong> KES <span id="totalAmount">0</span></p>
+
+    <!-- Pesapal Payment -->
+    <iframe width="300" height="50" src="https://store.pesapal.com/embed-code?pageUrl=https://store.pesapal.com/unitasker" allowfullscreen></iframe>
+
+    <label style="margin-top:15px; display:block; text-align:left;">
+        Paste your Pesapal payment confirmation message:
+    </label>
+    <textarea id="confirmationMsg" placeholder="Example: Pesapal payment successful, Ref: XYZ123"></textarea>
+
+    <button onclick="savePayment()">Submit Payment Confirmation</button>
+</div>
+
+<script>
+    // Get last submitted assignment
+    let submissions = JSON.parse(localStorage.getItem("submissions") || "[]");
+    let latestAssignment = submissions[submissions.length - 1];
+
+    if (!latestAssignment) {
+        alert("No assignment found to pay for!");
+        window.location.href = "index.html";
+    }
+
+    // Calculate payment
+    let pages = parseInt(latestAssignment.pages) || 0;
+    let total = pages * 15;
+
+    document.getElementById("pagesCount").textContent = pages;
+    document.getElementById("totalAmount").textContent = total;
+
+    // Save payment info
+    function savePayment() {
+        let msg = document.getElementById("confirmationMsg").value.trim();
+        if (!msg) {
+            alert("Please paste your Pesapal confirmation message.");
+            return;
+        }
+
+        latestAssignment.paid = true;
+        latestAssignment.paymentConfirmation = msg;
+
+        submissions[submissions.length - 1] = latestAssignment;
+        localStorage.setItem("submissions", JSON.stringify(submissions));
+
+        alert("Payment confirmation submitted! Your assignment will be processed.");
+        window.location.href = "index.html";
+    }
+</script>
+
+</body>
+</html>
