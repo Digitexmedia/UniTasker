@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Login - UniTasker</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #0072ff, #00c6ff);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    .login-box {
+        background: rgba(255,255,255,0.1);
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        text-align: center;
+        width: 300px;
+    }
+    .login-box img {
+        max-height: 70px;
+        margin-bottom: 10px;
+    }
+    input {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        border-radius: 6px;
+        border: none;
+        font-size: 14px;
+    }
+    button {
+        width: 100%;
+        padding: 10px;
+        background: #0072ff;
+        border: none;
+        color: white;
+        font-weight: bold;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+    button:hover {
+        background: #005ecb;
+    }
+</style>
+</head>
+<body>
+
+<div class="login-box">
+    <img src="https://files.catbox.moe/a2paf3.jpg" alt="UniTasker Logo">
+    <h2>Your Assignment Copilot</h2>
+    <input type="password" id="adminPass" placeholder="Enter Admin Password">
+    <button onclick="loginAdmin()">Login</button>
+</div>
+
+<script>
+function loginAdmin() {
+    const pass = document.getElementById("adminPass").value.trim();
+    if (pass === "@Junior2025") {
+        localStorage.setItem("adminLoggedIn", "true");
+        window.location.href = "admin.html";
+    } else {
+        alert("Incorrect password!");
+    }
+}
+</script>
+
+</body>
+</html>
