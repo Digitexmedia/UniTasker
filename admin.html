@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniTasker - Admin Panel</title>
+<style>
+    body {
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        color: white;
+        font-family: "Segoe UI", sans-serif;
+        margin: 0;
+    }
+    header {
+        padding: 20px;
+        text-align: center;
+        background: rgba(0,0,0,0.5);
+    }
+    .container {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    .tabs {
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    .tabBtn {
+        padding: 8px 15px;
+        border: none;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 5px;
+    }
+    .tabBtn.active {
+        background: #00c6ff;
+    }
+    .card {
+        background: rgba(255,255,255,0.08);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .card h3 {
+        margin-top: 0;
+    }
+    button {
+        background: linear-gradient(90deg,#00c6ff,#0072ff);
+        border: none;
+        padding: 8px 15px;
+        color: white;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-top: 8px;
+    }
+    button:hover {
+        background: linear-gradient(90deg,#0072ff,#00c6ff);
+    }
+    .status-pending { color: yellow; font-weight: bold; }
+    .status-completed { color: lightgreen; font-weight: bold; }
+    input, textarea {
+        width: 100%;
+        padding: 8px;
+        margin: 6px 0;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        color: black;
+        background: white;
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>🛠 UniTasker - Admin Panel</h1>
+</header>
+
+<div class="container">
+    <h2>Total Registered Students: <span id="totalStudents">0</span></h2>
+
+    <div class="tabs">
+        <button id="tabPending" class="tabBtn active">⏳ Pending</button>
+        <button id="tabCompleted" class="tabBtn">✅ Completed</button>
+        <button id="logoutBtn" style="background:red;">Logout</button>
+    </div>
+
+    <div id="assignmentList"></div>
+</div>
+
+<script>
+    // Redirect if admin not logged in
+    if (!localStorage.getItem("adminLoggedIn")) {
+        window.location.href = "admin-login.html";
+    }
+
+    let currentTab = "Pending";
+
+    function loadData() {
+        let students = JSON.parse(localStorage.getItem("students") || "[]");
+        let submissions = JSON.parse(localStorage.getItem("submissions") || "[]");
+
+        // Show only PAID assignments
+        submissions = submissions.filter(s => s.paid === true);
+
+        document.getElementById("totalStudents").textContent = students.length;
+
+        let filtered = submissions.filter(s => s.status === currentTab);
+        filtered.sort((a,b) => b.id - a.id);
+
+        document.getElementById("assignmentList").innerHTML = filtered.map(renderCard).join("");
+    }
+
+    function renderCard(a) {
+        let details = `
+            <p><strong>Student:</strong> ${a.firstName || "Unknown"} - ${a.whatsapp || "N/A"}</p>
+            <p><strong>Cover Page:</strong> ${a.coverPage === "yes" ? "Yes" : "No"}</p>
+            <p><strong>Assignment Type:</strong> ${a.type || "N/A"}</p>
+            <p><strong>Pages:</strong> ${a.pages}</p>
+            ${a.question ? `<p><strong>Question:</strong> ${a.question}</p>` : ""}
+            ${a.courseTitle || a.courseCode ? `<p><strong>Course:</strong> ${a.courseTitle || ""} (${a.courseCode || ""})</p>` : ""}
+            ${a.institution ? `<p><strong>Institution:</strong> ${a.institution}</p>` : ""}
+            ${a.schoolName ? `<p><strong>School:</strong> ${a.schoolName}</p>` : ""}
+            ${a.department ? `<p><strong>Department:</strong> ${a.department}</p>` : ""}
+            ${a.lecturer ? `<p><strong>Lecturer:</strong> ${a.lecturer}</p>` : ""}
+            ${a.paymentConfirmation ? `<p><strong>Payment Confirmation:</strong> ${a.paymentConfirmation}</p>` : ""}
+        `;
+
+        if (a.type === "Individual") {
+            details += `
+                ${a.regNo ? `<p><strong>Reg No:</strong> ${a.regNo}</p>` : ""}
+                ${a.phone ? `<p><strong>Phone:</strong> ${a.phone}</p>` : ""}
+            `;
+        }
+
+        if (a.type === "Group" && a.members && a.members.length > 0) {
+            details += `<p><strong>Group Members:</strong></p><ul>`;
+            a.members.forEach(m => {
+                details += `<li>${m.name} - ${m.regNo} - ${m.phone}</li>`;
+            });
+            details += `</ul>`;
+        }
+
+        details += `
+            <p><strong>Deadline:</strong> ${a.deadline}</p>
+            <p>Status: <span class="${a.status === 'Pending' ? 'status-pending' : 'status-completed'}">${a.status}</span></p>
+        `;
+
+        if (a.status === "Pending") {
+            details += `
+                <input type="url" id="url${a.id}" placeholder="Paste completed file URL">
+                <textarea id="feedback${a.id}" placeholder="Feedback (optional)"></textarea>
+                <button onclick="markCompleted(${a.id})">Mark as Completed</button>
+            `;
+        } else if (a.status === "Completed" && a.completedURL) {
+            details += `<p>✅ <a href="${a.completedURL}" target="_blank" style="color:lightgreen;">Download/View File</a></p>`;
+            if (a.feedback) details += `<p><strong>Feedback:</strong> ${a.feedback}</p>`;
+        }
+
+        return `<div class="card"><h3>📌 Assignment #${a.id}</h3>${details}</div>`;
+    }
+
+    function markCompleted(id) {
+        let submissions = JSON.parse(localStorage.getItem("submissions") || "[]");
+        let sub = submissions.find(s => s.id === id);
+        if (!sub) return;
+
+        let url = document.getElementById(`url${id}`).value.trim();
+        if (!url) {
+            alert("Please enter file URL");
+            return;
+        }
+        let feedback = document.getElementById(`feedback${id}`).value.trim();
+
+        sub.status = "Completed";
+        sub.completedURL = url;
+        sub.feedback = feedback;
+
+        localStorage.setItem("submissions", JSON.stringify(submissions));
+        loadData();
+    }
+
+    document.getElementById("tabPending").onclick = () => {
+        currentTab = "Pending";
+        document.getElementById("tabPending").classList.add("active");
+        document.getElementById("tabCompleted").classList.remove("active");
+        loadData();
+    };
+
+    document.getElementById("tabCompleted").onclick = () => {
+        currentTab = "Completed";
+        document.getElementById("tabCompleted").classList.add("active");
+        document.getElementById("tabPending").classList.remove("active");
+        loadData();
+    };
+
+    document.getElementById("logoutBtn").onclick = () => {
+        localStorage.removeItem("adminLoggedIn");
+        window.location.href = "admin-login.html";
+    };
+
+    loadData();
+</script>
+
+</body>
+</html>
